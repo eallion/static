@@ -1,0 +1,78 @@
+# .github/workflows/douban.yml
+name: s3 bucket Sync
+on:
+  schedule:
+# every week
+  - cron: "0 0 * * 0"
+#  watch:
+#    types: [started]
+
+  workflow_dispatch:
+
+jobs:
+  douban:
+    name: s3 bucket Sync 
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # 从腾讯云同步下载
+    - name: Download Resource from Tencent COS
+      uses: zkqiang/tencent-cos-action@v0.1.0
+      with:
+        args: download -rs --skipmd5 / ./
+        secret_id: ${{ secrets.SECRET_COS_ID }}
+        secret_key: ${{ secrets.SECRET_COS_KEY }}
+        bucket: ${{ secrets.COS_CDN_BUCKET }}
+        region: ap-shanghai
+
+    # Commit
+    - name: Git Commit
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: 'chore: sync from tencent cos'
+        add: './'
+
+    # Read to Upload
+    - name: Remove Ignore files
+      run: |
+        rm .git -rf
+        rm .github -rf
+
+    # Setup Rclone
+    - name: Setup Rclone
+      uses: AnimMouse/setup-rclone@v1
+      with:
+        rclone_config: ${{ secrets.RCLONE_CONFIG }}
+
+    # Rclone Sync to B2 & R2
+    - name: Rclone Sync 
+      run: |
+          rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16
+          rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16
+
+    # # Upload to CF R2
+    # - name: R2 Directory Sync
+    #   uses: ryand56/r2-upload-action@v1.2
+    #   with:
+    #     r2-account-id: ${{ secrets.CF_ACCOUNT_ID }}
+    #     r2-access-key-id: ${{ secrets.CF_ACCESS_ID }}
+    #     r2-secret-access-key: ${{ secrets.CF_ACCESS_KEY }}
+    #     r2-bucket: ${{ secrets.CF_R2_BUCKET }}
+    #     source-dir: ./
+    #     output-file-url: false # defaults to true
+    #     #destination-dir: / # Can be anything as long as it is an actual path
+
+    # # Upload to Backblaze
+    # - name: B2 Directory Sync 
+    #   uses: bm2ilabs/s3-backblaze-github-action@v1
+    #   with:
+    #     args: --acl public-read
+    #   env:
+    #     FILE: ./
+    #     S3_REGION: 'us-west-004'
+    #     S3_BUCKET: ${{ secrets.B2_BUCKET }}
+    #     S3_ENDPOINT_URL: 'https://s3.us-west-004.backblazeb2.com'
+    #     S3_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    #     S3_SECRET_ACCESS_KEY: ${{ secrets.B2_KEY }}
