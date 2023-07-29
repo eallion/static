@@ -2,8 +2,8 @@
 name: s3 bucket Sync
 on:
   schedule:
-# every week
-  - cron: "0 0 * * 0"
+# 4 times everyday
+  - cron: "0 */6 * * *"
 #  watch:
 #    types: [started]
 
@@ -17,40 +17,49 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    # 从腾讯云同步下载
-    - name: Download Resource from Tencent COS
-      uses: zkqiang/tencent-cos-action@v0.1.0
-      with:
-        args: download -rs --skipmd5 / ./
-        secret_id: ${{ secrets.SECRET_COS_ID }}
-        secret_key: ${{ secrets.SECRET_COS_KEY }}
-        bucket: ${{ secrets.COS_CDN_BUCKET }}
-        region: ap-shanghai
-
-    # Commit
-    - name: Git Commit
-      uses: EndBug/add-and-commit@v9
-      with:
-        message: 'chore: sync from tencent cos'
-        add: './'
-
-    # Read to Upload
-    - name: Remove Ignore files
-      run: |
-        rm .git -rf
-        rm .github -rf
-
     # Setup Rclone
     - name: Setup Rclone
       uses: AnimMouse/setup-rclone@v1
       with:
         rclone_config: ${{ secrets.RCLONE_CONFIG }}
 
+    # # Download from Tencent COS
+    # - name: Download Resource from Tencent COS
+    #   uses: zkqiang/tencent-cos-action@v0.1.0
+    #   with:
+    #     args: download -rs --skipmd5 / ./
+    #     secret_id: ${{ secrets.SECRET_COS_ID }}
+    #     secret_key: ${{ secrets.SECRET_COS_KEY }}
+    #     bucket: ${{ secrets.COS_CDN_BUCKET }}
+    #     region: ap-shanghai
+
+    # # Sync from Tencent COS
+    - name: Rclone Sync 
+      run: |
+          rclone copy TencentCOS:${{ secrets.COS_CDN_BUCKET }} ./ --transfers=8 --checkers=16
+      env:
+        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
+
+    # Backup in GitHub
+    - name: Git Commit
+      uses: EndBug/add-and-commit@v9
+      with:
+        message: 'chore: sync from tencent cos'
+        add: './'
+
+    # # Ready to Upload
+    # - name: Remove Ignore files
+    #   run: |
+    #     rm .git -rf
+    #     rm .github -rf
+
     # Rclone Sync to B2 & R2
     - name: Rclone Sync 
       run: |
-          rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16
-          rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16
+          rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
+      env:
+        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
 
     # # Upload to CF R2
     # - name: R2 Directory Sync
