@@ -1,5 +1,8 @@
 name: s3 bucket Sync
 on:
+  push:
+    branches:
+      - main
   schedule:
 # 4 times everyday
   - cron: "0 */6 * * *"
@@ -32,29 +35,30 @@ jobs:
     #     bucket: ${{ secrets.COS_CDN_BUCKET }}
     #     region: ap-shanghai
 
-    # # Sync from Tencent COS
-    - name: Rclone Sync 
-      run: |
-          rclone copy TencentCOS:${{ secrets.COS_CDN_BUCKET }} ./ --transfers=8 --checkers=16
-      env:
-        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
-
-    # Backup in GitHub
-    - name: Git Commit
-      uses: EndBug/add-and-commit@v9
-      with:
-        message: 'chore: sync from tencent cos'
-        add: './'
-
-    # # Ready to Upload
-    # - name: Remove Ignore files
+    # # # Sync from Tencent COS
+    # - name: Rclone Sync 
     #   run: |
-    #     rm .git -rf
-    #     rm .github -rf
+    #       rclone copy TencentCOS:${{ secrets.COS_CDN_BUCKET }} ./ --transfers=8 --checkers=16
+    #   env:
+    #     RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
+
+    # # Backup in GitHub
+    # - name: Git Commit
+    #   uses: EndBug/add-and-commit@v9
+    #   with:
+    #     message: 'chore: sync from tencent cos'
+    #     add: './'
+
+    # Ready to Upload
+    - name: Remove Ignore files
+      run: |
+        rm .git -rf
+        rm .github -rf
 
     # Rclone Sync to B2 & R2
     - name: Rclone Sync 
       run: |
+          rclone copy ./ TencentCOS:${{ secrets.COS_CDN_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
       env:
