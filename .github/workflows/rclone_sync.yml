@@ -60,7 +60,7 @@ jobs:
       run: |
           rclone copy ./ TencentCOS:${{ secrets.COS_CDN_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
+    #    rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
       env:
         RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
 
