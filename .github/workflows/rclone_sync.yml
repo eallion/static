@@ -58,7 +58,8 @@ jobs:
     # Rclone Sync to B2 & R2
     - name: Rclone Sync 
       run: |
-          rclone copy ./ TencentCOS:${{ secrets.COS_CDN_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone copy ./ TencentUS:${{ secrets.COS_CDN_US_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone copy ./ TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
     #    rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
       env:
