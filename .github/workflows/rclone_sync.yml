@@ -25,30 +25,6 @@ jobs:
       with:
         rclone_config: ${{ secrets.RCLONE_CONFIG }}
 
-    # # Download from Tencent COS
-    # - name: Download Resource from Tencent COS
-    #   uses: zkqiang/tencent-cos-action@v0.1.0
-    #   with:
-    #     args: download -rs --skipmd5 / ./
-    #     secret_id: ${{ secrets.SECRET_COS_ID }}
-    #     secret_key: ${{ secrets.SECRET_COS_KEY }}
-    #     bucket: ${{ secrets.COS_CDN_BUCKET }}
-    #     region: ap-shanghai
-
-    # # # Sync from Tencent COS
-    # - name: Rclone Sync 
-    #   run: |
-    #       rclone copy TencentCOS:${{ secrets.COS_CDN_BUCKET }} ./ --transfers=8 --checkers=16
-    #   env:
-    #     RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
-
-    # # Backup in GitHub
-    # - name: Git Commit
-    #   uses: EndBug/add-and-commit@v9
-    #   with:
-    #     message: 'chore: sync from tencent cos'
-    #     add: './'
-
     # Ready to Upload
     - name: Remove Ignore files
       run: |
@@ -58,34 +34,9 @@ jobs:
     # Rclone Sync to B2 & R2
     - name: Rclone Sync 
       run: |
-          rclone copy ./ TencentUS:${{ secrets.COS_CDN_US_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone copy ./ TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone copy ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
-    #    rclone copy ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone sync ./ TencentUS:${{ secrets.COS_CDN_US_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone sync ./ TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone sync ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
+          rclone sync ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
       env:
         RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
-
-    # # Upload to CF R2
-    # - name: R2 Directory Sync
-    #   uses: ryand56/r2-upload-action@v1.2
-    #   with:
-    #     r2-account-id: ${{ secrets.CF_ACCOUNT_ID }}
-    #     r2-access-key-id: ${{ secrets.CF_ACCESS_ID }}
-    #     r2-secret-access-key: ${{ secrets.CF_ACCESS_KEY }}
-    #     r2-bucket: ${{ secrets.CF_R2_BUCKET }}
-    #     source-dir: ./
-    #     output-file-url: false # defaults to true
-    #     #destination-dir: / # Can be anything as long as it is an actual path
-
-    # # Upload to Backblaze
-    # - name: B2 Directory Sync 
-    #   uses: bm2ilabs/s3-backblaze-github-action@v1
-    #   with:
-    #     args: --acl public-read
-    #   env:
-    #     FILE: ./
-    #     S3_REGION: 'us-west-004'
-    #     S3_BUCKET: ${{ secrets.B2_BUCKET }}
-    #     S3_ENDPOINT_URL: 'https://s3.us-west-004.backblazeb2.com'
-    #     S3_ACCESS_KEY_ID: ${{ secrets.B2_KEY_ID }}
-    #     S3_SECRET_ACCESS_KEY: ${{ secrets.B2_KEY }}
