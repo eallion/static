@@ -3,9 +3,9 @@ on:
   push:
     branches:
       - main
-  schedule:
-# 4 times everyday
-  - cron: "0 */6 * * *"
+#   schedule:
+# # 4 times everyday
+#   - cron: "0 */6 * * *"
 #  watch:
 #    types: [started]
 
