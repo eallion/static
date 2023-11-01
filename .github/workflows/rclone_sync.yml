@@ -34,9 +34,9 @@ jobs:
     # Rclone Sync to B2 & R2
     - name: Rclone Sync 
       run: |
-          rclone sync -u --size-only ./ TencentUS:${{ secrets.COS_CDN_US_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
+          # rclone sync -u --size-only ./ TencentUS:${{ secrets.COS_CDN_US_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone sync -u --size-only ./ TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone sync -u --size-only ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone sync -u --size-only ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
+          # rclone sync -u --size-only ./ Backblaze:${{ secrets.B2_BUCKET }} --transfers=8 --checkers=16 --max-age 24h --checksum --exclude=.git/** --exclude=.github/** --exclude=README.md
       env:
         RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
