@@ -31,12 +31,19 @@ jobs:
         rm .git -rf
         rm .github -rf
 
-    # Rclone Sync to B2 & R2
-    - name: Rclone Sync 
+    # Rclone Sync to Tencent Cloud COS
+    - name: Rclone Sync to COS
       run: |
           # rclone sync ./ TencentUS:${{ secrets.COS_CDN_US_BUCKET }} --filter newer --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
           rclone sync ./ TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone sync ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
+          #rclone sync ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
           # rclone sync ./ Backblaze:${{ secrets.B2_BUCKET }} --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
+      env:
+        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
+
+    # Rclone Sync to Cloudflare R2
+    - name: Rclone Sync to R2
+      run: |
+          rclone sync ./ Cloudflare:${{ secrets.CF_R2_BUCKET }} --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
       env:
         RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
