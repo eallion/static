@@ -41,6 +41,13 @@ jobs:
       env:
         RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
 
+    # Rclone Sync to Aliyun OSS
+    - name: Rclone Sync to Aliyun OSS
+      run: |
+          rclone sync ./ AliyunOSS:${{ secrets.OSS_CN_BUCKET }} --max-age 24h --exclude=.git/** --exclude=.github/** --exclude=README.md
+      env:
+        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
+
     # Rclone Sync to Cloudflare R2
     - name: Rclone Sync to R2
       run: |
