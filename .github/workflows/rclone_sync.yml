@@ -14,6 +14,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: '2'
 
     # Setup Rclone
     - name: Setup Rclone
@@ -21,84 +23,33 @@ jobs:
       with:
         rclone_config: ${{ secrets.RCLONE_CONFIG }}
 
-    # Ready to Upload
-    - name: Remove Ignore files
+    # Rclone Sync
+    - name: Rclone Sync
       run: |
-        rm .git -rf
-        rm .github -rf
+        # 获取当前 commit 哈希值
+        current_commit=$(git rev-parse HEAD)
 
-    # Generate .actioninfo file
-    - name: Generate .actioninfo file
-      run: |
-        output_file=".actioninfo"
-        > "$output_file"
-        find . -type f | while read -r file; do
-          md5=$(md5sum "$file" | awk '{print $1}')
-          echo "\"$file\": {\"ContentMD5\": \"$md5\"}," >> "$output_file"
-        done
-        sed -i '$ s/,$//' "$output_file"
-        echo "{" > temp_file
-        cat "$output_file" >> temp_file
-        echo "}" >> temp_file
-        mv temp_file "$output_file"
+        # 获取上一个 commit 哈希值
+        previous_commit=$(git log --skip=1 --format="%H" | head -n 1)
 
-    # Download .actioninfo file from target directory
-    - name: Download .actioninfo file from target directory
-      run: rclone copy TencentCN:${{ secrets.COS_CDN_CN_BUCKET }}/.actioninfo .actioninfo_remote || true
-      env:
-        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
+        # 列出两个 commit 之间变化的文件
+        changed_files=$(git diff --name-only $previous_commit $current_commit)
 
-    # Check if .actioninfo_remote exists
-    - name: Check if .actioninfo_remote exists
-      id: check_remote_actioninfo
-      run: |
-        if [ -f .actioninfo_remote ]; then
-          echo "REMOTE_ACTIONINFO_EXISTS=true" >> $GITHUB_ENV
-        else
-          echo "REMOTE_ACTIONINFO_EXISTS=false" >> $GITHUB_ENV
-        fi
+        # 列出被删除的文件
+        deleted_files=$(git diff --name-only --diff-filter=D $previous_commit $current_commit)
 
-    # Compare .actioninfo files if .actioninfo_remote exists
-    - name: Compare .actioninfo files
-      if: env.REMOTE_ACTIONINFO_EXISTS == 'true'
-      run: |
-        local_actioninfo=".actioninfo"
-        remote_actioninfo=".actioninfo_remote"
-        diff <(jq -S . "$local_actioninfo") <(jq -S . "$remote_actioninfo") | grep -E '^>|^\<' | awk -F'"' '{print $2}' > changed_files.txt
-        diff <(jq -S . "$remote_actioninfo") <(jq -S . "$local_actioninfo") | grep -E '^>|^\<' | awk -F'"' '{print $2}' > deleted_files.txt
+        # 使用 rclone 同步这些文件
 
-    # Rclone Sync to Tencent Cloud COS
-    - name: Rclone Sync to COS
-      run: |
-        source_path="."
-        target_path_cos="TencentCN:${{ secrets.COS_CDN_CN_BUCKET }}"
-        target_path_oss="AliyunOSS:${{ secrets.OSS_CN_BUCKET }}"
-        target_path_r2="Cloudflare:${{ secrets.CF_R2_BUCKET }}"
-        if [ -f changed_files.txt ]; then
-          changed_files=$(cat changed_files.txt)
-          for file in $changed_files; do
-            rclone sync "$source_path/$file" "$target_path_cos/$file"
-            rclone sync "$source_path/$file" "$target_path_oss/$file"
-            rclone sync "$source_path/$file" "$target_path_r2/$file"
-          done
-        fi
-        if [ -f deleted_files.txt ]; then
-          deleted_files=$(cat deleted_files.txt)
-          for file in $deleted_files; do
-            rclone delete "$target_path_cos/$file"
-            rclone delete "$target_path_oss/$file"
-            rclone delete "$target_path_r2/$file"
-          done
-        else
-          rclone sync "$source_path" "$target_path_cos" --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone sync "$source_path" "$target_path_oss" --exclude=.git/** --exclude=.github/** --exclude=README.md
-          rclone sync "$source_path" "$target_path_r2" --exclude=.git/** --exclude=.github/** --exclude=README.md
-        fi
-      env:
-        RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
+        echo "${changed_files[@]}" > changed_files.txt
+        echo "${changed_files[@]}" > deleted_files.txt
 
-    # Upload .actioninfo file to target directory
-    - name: Upload .actioninfo file to target directory
-      run: rclone copy .actioninfo TencentCN:${{ secrets.COS_CDN_CN_BUCKET }}
+        # 使用 rclone 同步这些文件
+        rclone sync . TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --include-from changed_files.txt || true
+        rclone sync . AliyunOSS:${{ secrets.OSS_CN_BUCKET }} --include-from changed_files.txt || true
+        rclone sync . Cloudflare:${{ secrets.CF_R2_BUCKET }} --include-from changed_files.txt || true
+
+        rclone delete TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --include-from deleted_files.txt || true
+        rclone delete AliyunOSS:${{ secrets.OSS_CN_BUCKET }} --include-from deleted_files.txt || true
+        rclone delete Cloudflare:${{ secrets.CF_R2_BUCKET }} --include-from deleted_files.txt || true
       env:
         RCLONE_CONFIG_PASS: ${{ secrets.RCLONE_CONFIG_PASS }}
