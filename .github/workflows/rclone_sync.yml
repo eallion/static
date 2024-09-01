@@ -26,17 +26,11 @@ jobs:
     # Rclone Sync
     - name: Rclone Sync
       run: |
-        # 获取当前 commit 哈希值
-        current_commit=$(git rev-parse HEAD)
-
-        # 获取上一个 commit 哈希值
-        previous_commit=$(git log --skip=1 --format="%H" | head -n 1)
-
         # 列出两个 commit 之间变化的文件
-        changed_files=$(git diff --name-only $previous_commit $current_commit)
+        changed_files=$(git diff --name-only HEAD~1 HEAD)
 
         # 列出被删除的文件
-        deleted_files=$(git diff --name-only --diff-filter=D $previous_commit $current_commit)
+        deleted_files=$(git diff --name-only --diff-filter=D HEAD~1 HEAD)
 
         # 使用 rclone 同步这些文件
 
