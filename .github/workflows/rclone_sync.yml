@@ -42,7 +42,7 @@ jobs:
 
         # 使用 rclone 同步这些文件
         if [ -s changed_files.txt ]; then
-          rclone sync . TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --include-from changed_files.txt || true
+          # rclone sync . TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --include-from changed_files.txt || true
           rclone sync . AliyunOSS:${{ secrets.OSS_CN_BUCKET }} --include-from changed_files.txt || true
           rclone sync . Cloudflare:${{ secrets.CF_R2_BUCKET }} --include-from changed_files.txt || true
           echo "Changed Files:"
@@ -50,7 +50,7 @@ jobs:
         fi
 
         if [ -s deleted_files.txt ]; then
-          rclone delete TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --include-from deleted_files.txt || true
+          # rclone delete TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} --include-from deleted_files.txt || true
           rclone delete AliyunOSS:${{ secrets.OSS_CN_BUCKET }} --include-from deleted_files.txt || true
           rclone delete Cloudflare:${{ secrets.CF_R2_BUCKET }} --include-from deleted_files.txt || true
           echo "Deleted Files:"
