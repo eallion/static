@@ -28,7 +28,7 @@ jobs:
     # Rclone Sync
     - name: Rclone Sync
       run: |
-        rclone sync TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} . || true
+        rclone copy TencentCN:${{ secrets.COS_CDN_CN_BUCKET }} . || true
 #         # 列出两个 commit 之间变化的文件
 #         changed_files=$(git diff --name-only HEAD~1 HEAD)
 # 
